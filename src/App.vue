@@ -1,9 +1,7 @@
-<script setup>
-</script>
+<script setup></script>
 
 <template>
-  <div><h1 class="text-3xl font-bold underline">Test Tailwind CSS</h1></div>
+  <div class="bg-sky-950"><router-view></router-view></div>
 </template>
 
-<style scoped>
-</style>
+<style scoped></style>
