@@ -1,3 +1,6 @@
+import DashboardView from '@/views/DashboardView.vue'
+import FormAddView from '@/views/FormAddView.vue'
+import FormDetteView from '@/views/FormDetteView.vue'
 import HomeView from '@/views/HomeView.vue'
 import { createRouter, createWebHistory } from 'vue-router'
 
@@ -8,9 +11,9 @@ const routes = [
     component: HomeView,
   },
   {
-    path: '/dashboardVue',
-    name: 'dashboard',
-    component: HomeView,
+    path: '/dashboardView',
+    name: 'dashboardView',
+    component: DashboardView,
   },
   {
     path: '/paramsVue',
@@ -18,14 +21,14 @@ const routes = [
     component: HomeView,
   },
   {
-    path: '/montantVue',
-    name: 'montant',
-    component: HomeView,
+    path: '/formAddView',
+    name: 'formAddView',
+    component: FormAddView,
   },
   {
-    path: '/detteVue',
-    name: 'dette',
-    component: HomeView,
+    path: '/formDetteView',
+    name: 'formDetteView',
+    component: FormDetteView,
   },
 ]
 
