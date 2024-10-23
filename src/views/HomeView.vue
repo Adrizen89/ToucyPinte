@@ -16,7 +16,7 @@
             class="text-2xl font-bold text-sky-50 cursor-pointer"
             @click="startEditing"
           >
-            {{ remainingConsos }} <br />consos restantes
+            {{ nbreConsos || '0' }} <br />consos restantes
           </p>
           <input
             v-else
@@ -30,13 +30,13 @@
           <!-- Boutons pour ajouter/enlever une conso -->
           <div class="flex mt-2 gap-10 justify-start w-full">
             <button
-              @click="decreaseConsos"
+              @click="decrementConsos"
               class="px-3 py-1 bg-sky-400 text-white rounded-lg hover:bg-sky-600"
             >
               -
             </button>
             <button
-              @click="increaseConsos"
+              @click="incrementConsos"
               class="px-3 py-1 bg-sky-500 text-white rounded-lg hover:bg-sky-800"
             >
               +
@@ -140,16 +140,108 @@
 </template>
 
 <script>
+import { db } from '@/firebase/index'
+import { collection, getDocs, updateDoc, doc, addDoc } from 'firebase/firestore'
+
 export default {
   data() {
     return {
-      collectedAmount: 123, // Montant récolté
-      remainingConsos: 12, // Nombre de consos restantes
-      inputConsos: 12, // Valeur de l'input pour modifier le nombre de consos
-      isEditing: false, // Mode édition activé ou non
+      collectedAmount: 123,
+      remainingConsos: 12,
+      nombreConsos: '',
+      nbreConsos: '',
+      inputConsos: 12,
+      isEditing: false,
     }
   },
   methods: {
+    async fetchConsos() {
+      try {
+        const consommationsCol = collection(db, 'consommations')
+        const consommationsSnap = await getDocs(consommationsCol)
+
+        if (!consommationsSnap.empty) {
+          // Si tu veux prendre le premier enregistrement et afficher son nombre
+          const consommation = consommationsSnap.docs[0].data().nombre
+          this.nbreConsos = consommation
+
+          // Si tu veux additionner toutes les consommations
+          // this.nbreConsos = consommationsSnap.docs.reduce((sum, doc) => sum + doc.data().nombre, 0)
+        } else {
+          this.nbreConsos = 0 // Si aucune consommation trouvée
+        }
+      } catch (error) {
+        console.error(
+          'Erreur lors de la récupération des consommations :',
+          error,
+        )
+      }
+    },
+    async incrementConsos() {
+      this.nbreConsos++
+      await this.updateConsos(this.nbreConsos)
+    },
+    async decrementConsos() {
+      if (this.nbreConsos > 0) {
+        this.nbreConsos--
+        await this.updateConsos(this.nbreConsos)
+      }
+    },
+    async updateConsos(newValue) {
+      try {
+        const consommationsCollection = collection(db, 'consommations')
+        const consommationsSnapshot = await getDocs(consommationsCollection)
+
+        if (!consommationsSnapshot.empty) {
+          const consommationDoc = consommationsSnapshot.docs[0]
+          const consommationRef = doc(db, 'consommations', consommationDoc.id)
+          await updateDoc(consommationRef, {
+            nombre: newValue,
+          })
+        }
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour des consos:', error)
+      }
+    },
+    async saveConsos() {
+      if (!this.nombreConsos || this.nombreConsos <= 0) {
+        alert('Veuillez entrer un nombre valide.')
+        return
+      }
+
+      try {
+        // Rechercher la première entrée dans la collection "consommations"
+        const consommationsCollection = collection(db, 'consommations')
+        const consommationsSnapshot = await getDocs(consommationsCollection)
+
+        if (!consommationsSnapshot.empty) {
+          // Si un enregistrement existe, le mettre à jour
+          const consommationDoc = consommationsSnapshot.docs[0] // Prendre le premier enregistrement trouvé
+          const consommationRef = doc(db, 'consommations', consommationDoc.id)
+          await updateDoc(consommationRef, {
+            nombre: this.nombreConsos, // Mise à jour du nombre
+          })
+          alert('Nombre de consos mis à jour avec succès !')
+        } else {
+          // Si aucun enregistrement trouvé, en créer un nouveau
+          const docRef = await addDoc(collection(db, 'consommations'), {
+            nombre: this.nombreConsos,
+            date: new Date().toLocaleDateString('fr-FR'),
+          })
+          console.log("Nouvelle consommation enregistrée avec l'ID:", docRef.id)
+          alert('Nouvelle consommation enregistrée avec succès !')
+        }
+
+        // Mettre à jour la valeur affichée dans la card-consos
+        this.nbreConsos = this.nombreConsos
+
+        // Réinitialiser les champs et fermer la modale
+        this.nombreConsos = ''
+        this.closeModal()
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement des consos :", error)
+      }
+    },
     goToFormAddView() {
       this.$router.push('/formAddView')
     },
@@ -181,6 +273,9 @@ export default {
         this.inputConsos = this.remainingConsos
       }
     },
+  },
+  mounted() {
+    this.fetchConsos(), this.fetchConsos()
   },
   name: 'HomeView',
 }
