@@ -5,7 +5,7 @@
       <div class="flex justify-center items-center w-full px-6 gap-10">
         <!-- Nombre aligné à gauche (Montant récolté) -->
         <p class="text-3xl font-bold text-sky-50">
-          {{ collectedAmount }} € <br />récoltés
+          {{ totalCollected - totalDet }} € <br />récoltés
         </p>
 
         <!-- consos restantes -->
@@ -16,15 +16,15 @@
             class="text-2xl font-bold text-sky-50 cursor-pointer"
             @click="startEditing"
           >
-            {{ nbreConsos || '0' }} <br />consos restantes
+            {{ nombreConsos || '0' }} <br />consos restantes
           </p>
           <input
             v-else
             type="number"
-            v-model="inputConsos"
+            v-model="nombreConsos"
             class="text-2xl font-bold text-sky-800 bg-white rounded-lg p-2 text-center w-20"
-            @blur="stopEditing"
-            @keydown.enter="stopEditing"
+            @blur="saveConsos"
+            @keydown.enter="saveConsos"
           />
 
           <!-- Boutons pour ajouter/enlever une conso -->
@@ -149,26 +149,31 @@ export default {
       collectedAmount: 123,
       remainingConsos: 12,
       nombreConsos: '',
-      nbreConsos: '',
       inputConsos: 12,
       isEditing: false,
+      tournees: [],
     }
   },
   methods: {
+    async fetchTotal() {
+      try {
+        const totalCollection = collection(db, 'tournees')
+        const totauxSnapshot = await getDocs(totalCollection)
+        this.tournees = totauxSnapshot.docs.map(doc => doc.data()) // Stocker les tournées récupérées
+      } catch (error) {
+        console.error('Erreur lors de la récupération des tournées:', error)
+      }
+    },
     async fetchConsos() {
       try {
         const consommationsCol = collection(db, 'consommations')
         const consommationsSnap = await getDocs(consommationsCol)
 
         if (!consommationsSnap.empty) {
-          // Si tu veux prendre le premier enregistrement et afficher son nombre
           const consommation = consommationsSnap.docs[0].data().nombre
-          this.nbreConsos = consommation
-
-          // Si tu veux additionner toutes les consommations
-          // this.nbreConsos = consommationsSnap.docs.reduce((sum, doc) => sum + doc.data().nombre, 0)
+          this.nombreConsos = consommation
         } else {
-          this.nbreConsos = 0 // Si aucune consommation trouvée
+          this.nombreConsos = 0
         }
       } catch (error) {
         console.error(
@@ -178,13 +183,13 @@ export default {
       }
     },
     async incrementConsos() {
-      this.nbreConsos++
-      await this.updateConsos(this.nbreConsos)
+      this.nombreConsos++
+      await this.updateConsos(this.nombreConsos)
     },
     async decrementConsos() {
-      if (this.nbreConsos > 0) {
-        this.nbreConsos--
-        await this.updateConsos(this.nbreConsos)
+      if (this.nombreConsos > 0) {
+        this.nombreConsos--
+        await this.updateConsos(this.nombreConsos)
       }
     },
     async updateConsos(newValue) {
@@ -204,6 +209,7 @@ export default {
       }
     },
     async saveConsos() {
+      // Si la valeur entrée n'est pas valide, on ne fait rien
       if (!this.nombreConsos || this.nombreConsos <= 0) {
         alert('Veuillez entrer un nombre valide.')
         return
@@ -232,12 +238,8 @@ export default {
           alert('Nouvelle consommation enregistrée avec succès !')
         }
 
-        // Mettre à jour la valeur affichée dans la card-consos
-        this.nbreConsos = this.nombreConsos
-
-        // Réinitialiser les champs et fermer la modale
-        this.nombreConsos = ''
-        this.closeModal()
+        // Sortir du mode d'édition et revenir à l'état initial
+        this.isEditing = false
       } catch (error) {
         console.error("Erreur lors de l'enregistrement des consos :", error)
       }
@@ -274,8 +276,30 @@ export default {
       }
     },
   },
+  computed: {
+    totalCollected() {
+      if (!this.tournees || !this.tournees.length) return '0.00'
+      return this.tournees
+        .reduce((sum, tournee) => {
+          const montant = parseFloat(tournee.montant)
+          return sum + (isNaN(montant) ? 0 : montant)
+        }, 0)
+        .toFixed(2)
+    },
+    // Calculer le montant total des dettes
+    totalDet() {
+      if (!this.tournees || !this.tournees.length) return '0.00'
+      return this.tournees
+        .filter(tournee => tournee.dette === true)
+        .reduce((sum, tournee) => {
+          const montant = parseFloat(tournee.montantDette)
+          return sum + (isNaN(montant) ? 0 : montant)
+        }, 0)
+        .toFixed(2)
+    },
+  },
   mounted() {
-    this.fetchConsos(), this.fetchConsos()
+    this.fetchConsos(), this.fetchTotal()
   },
   name: 'HomeView',
 }
