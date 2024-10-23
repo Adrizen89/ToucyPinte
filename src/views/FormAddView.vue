@@ -130,22 +130,20 @@
 </template>
 
 <script>
+import { db } from '@/firebase/index'
+import { collection, getDocs, addDoc } from 'firebase/firestore'
 export default {
   data() {
     return {
       selectedMembre: null,
-      filteredMembres: [
-        { name: 'Adrien' },
-        { name: 'Marie' },
-        { name: 'Julien' },
-      ],
+      filteredMembres: [],
       montantsDisponibles: [5, 10, 15, 20, 'Autre'],
       selectedMontant: null,
       customMontant: null,
       isCustomMontant: false,
       tourneePayee: false,
       selectedPaiement: null,
-      moyensPaiement: ['Carte', 'Espèces', 'Chèque'],
+      moyensPaiement: ['Lydia', 'Espèces', 'Paylib'],
       montantTournée: null,
     }
   },
@@ -159,18 +157,87 @@ export default {
     },
   },
   methods: {
-    goBack() {
-      console.log('Retour')
+    async fetchMembres() {
+      try {
+        const membresCollection = collection(db, 'membres')
+        const membresSnapshot = await getDocs(membresCollection)
+        this.membres = membresSnapshot.docs.map(doc => ({
+          name: doc.data().name,
+        }))
+        this.filteredMembres = this.membres
+      } catch (error) {
+        console.error('Erreur lors de la récupération des membres :', error)
+      }
     },
+    async addNewPersonne(nom) {
+      try {
+        if (!nom) {
+          throw new Error('Le nom de la personne est manquant.')
+        }
+
+        // Ajouter la nouvelle personne dans Firestore
+        const docRef = await addDoc(collection(db, 'membres'), {
+          name: nom, // Assurez-vous que le nom est bien passé
+          isResp: false,
+        })
+
+        console.log('Nouveau membre ajouté avec ID:', docRef.id)
+
+        // Ajouter le nouveau membre dans la liste des membres disponibles
+        this.membres.push(nom)
+
+        this.selectedMembre = nom
+
+        // Réinitialiser la sélection dans le composant ListChoice
+        this.$refs.personSelect.resetSelect()
+        this.$refs.personSelect.selectedItem = nom
+
+        alert(`${nom} a été ajouté avec succès !`)
+      } catch (error) {
+        console.error("Erreur lors de l'ajout d'un nouveau membre :", error)
+      }
+    },
+    async saveTournee() {
+      if (
+        !this.selectedMembre ||
+        !this.montantTournée ||
+        this.montantTournée <= 0
+      ) {
+        alert('Veuillez sélectionner un membre et un montant.')
+        return
+      }
+
+      try {
+        // Ajout de la nouvelle tournée dans Firestore
+        const docRef = await addDoc(collection(db, 'tournees'), {
+          name: this.selectedMembre.name,
+          montant: this.montantTournée,
+          paye: this.tourneePayee,
+          dette: !this.tourneePayee,
+          moyen: this.tourneePayee ? this.selectedPaiement : '',
+          date: new Date().toLocaleDateString(),
+          ...(this.tourneePayee === false
+            ? { montantDette: this.montantTournée }
+            : {}),
+        })
+
+        console.log("Document ajouté avec l'ID : ", docRef.id)
+        alert('Tournée enregistrée avec succès !')
+        this.resetForm()
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement de la tournée :", error)
+      }
+    },
+
     validateCustomMontant() {
       this.isCustomMontant = false
-    },
-    saveTournee() {
-      console.log('Tournée validée')
     },
     goHome() {
       this.$router.push('/')
     },
+  },
+  mounted() {
+    this.fetchMembres()
   },
 }
 </script>

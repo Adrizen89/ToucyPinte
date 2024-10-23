@@ -5,7 +5,7 @@
       <div class="flex justify-center items-center w-full px-6 gap-10">
         <!-- Nombre aligné à gauche (Montant récolté) -->
         <p class="text-3xl font-bold text-sky-50">
-          {{ collectedAmount }} € <br />récoltés
+          {{ totalCollected - totalDet }} € <br />récoltés
         </p>
 
         <!-- consos restantes -->
@@ -16,27 +16,27 @@
             class="text-2xl font-bold text-sky-50 cursor-pointer"
             @click="startEditing"
           >
-            {{ remainingConsos }} <br />consos restantes
+            {{ nombreConsos || '0' }} <br />consos restantes
           </p>
           <input
             v-else
             type="number"
-            v-model="inputConsos"
+            v-model="nombreConsos"
             class="text-2xl font-bold text-sky-800 bg-white rounded-lg p-2 text-center w-20"
-            @blur="stopEditing"
-            @keydown.enter="stopEditing"
+            @blur="saveConsos"
+            @keydown.enter="saveConsos"
           />
 
           <!-- Boutons pour ajouter/enlever une conso -->
           <div class="flex mt-2 gap-10 justify-start w-full">
             <button
-              @click="decreaseConsos"
+              @click="decrementConsos"
               class="px-3 py-1 bg-sky-400 text-white rounded-lg hover:bg-sky-600"
             >
               -
             </button>
             <button
-              @click="increaseConsos"
+              @click="incrementConsos"
               class="px-3 py-1 bg-sky-500 text-white rounded-lg hover:bg-sky-800"
             >
               +
@@ -140,16 +140,110 @@
 </template>
 
 <script>
+import { db } from '@/firebase/index'
+import { collection, getDocs, updateDoc, doc, addDoc } from 'firebase/firestore'
+
 export default {
   data() {
     return {
-      collectedAmount: 123, // Montant récolté
-      remainingConsos: 12, // Nombre de consos restantes
-      inputConsos: 12, // Valeur de l'input pour modifier le nombre de consos
-      isEditing: false, // Mode édition activé ou non
+      collectedAmount: 123,
+      remainingConsos: 12,
+      nombreConsos: '',
+      inputConsos: 12,
+      isEditing: false,
+      tournees: [],
     }
   },
   methods: {
+    async fetchTotal() {
+      try {
+        const totalCollection = collection(db, 'tournees')
+        const totauxSnapshot = await getDocs(totalCollection)
+        this.tournees = totauxSnapshot.docs.map(doc => doc.data()) // Stocker les tournées récupérées
+      } catch (error) {
+        console.error('Erreur lors de la récupération des tournées:', error)
+      }
+    },
+    async fetchConsos() {
+      try {
+        const consommationsCol = collection(db, 'consommations')
+        const consommationsSnap = await getDocs(consommationsCol)
+
+        if (!consommationsSnap.empty) {
+          const consommation = consommationsSnap.docs[0].data().nombre
+          this.nombreConsos = consommation
+        } else {
+          this.nombreConsos = 0
+        }
+      } catch (error) {
+        console.error(
+          'Erreur lors de la récupération des consommations :',
+          error,
+        )
+      }
+    },
+    async incrementConsos() {
+      this.nombreConsos++
+      await this.updateConsos(this.nombreConsos)
+    },
+    async decrementConsos() {
+      if (this.nombreConsos > 0) {
+        this.nombreConsos--
+        await this.updateConsos(this.nombreConsos)
+      }
+    },
+    async updateConsos(newValue) {
+      try {
+        const consommationsCollection = collection(db, 'consommations')
+        const consommationsSnapshot = await getDocs(consommationsCollection)
+
+        if (!consommationsSnapshot.empty) {
+          const consommationDoc = consommationsSnapshot.docs[0]
+          const consommationRef = doc(db, 'consommations', consommationDoc.id)
+          await updateDoc(consommationRef, {
+            nombre: newValue,
+          })
+        }
+      } catch (error) {
+        console.error('Erreur lors de la mise à jour des consos:', error)
+      }
+    },
+    async saveConsos() {
+      // Si la valeur entrée n'est pas valide, on ne fait rien
+      if (!this.nombreConsos || this.nombreConsos <= 0) {
+        alert('Veuillez entrer un nombre valide.')
+        return
+      }
+
+      try {
+        // Rechercher la première entrée dans la collection "consommations"
+        const consommationsCollection = collection(db, 'consommations')
+        const consommationsSnapshot = await getDocs(consommationsCollection)
+
+        if (!consommationsSnapshot.empty) {
+          // Si un enregistrement existe, le mettre à jour
+          const consommationDoc = consommationsSnapshot.docs[0] // Prendre le premier enregistrement trouvé
+          const consommationRef = doc(db, 'consommations', consommationDoc.id)
+          await updateDoc(consommationRef, {
+            nombre: this.nombreConsos, // Mise à jour du nombre
+          })
+          alert('Nombre de consos mis à jour avec succès !')
+        } else {
+          // Si aucun enregistrement trouvé, en créer un nouveau
+          const docRef = await addDoc(collection(db, 'consommations'), {
+            nombre: this.nombreConsos,
+            date: new Date().toLocaleDateString('fr-FR'),
+          })
+          console.log("Nouvelle consommation enregistrée avec l'ID:", docRef.id)
+          alert('Nouvelle consommation enregistrée avec succès !')
+        }
+
+        // Sortir du mode d'édition et revenir à l'état initial
+        this.isEditing = false
+      } catch (error) {
+        console.error("Erreur lors de l'enregistrement des consos :", error)
+      }
+    },
     goToFormAddView() {
       this.$router.push('/formAddView')
     },
@@ -181,6 +275,31 @@ export default {
         this.inputConsos = this.remainingConsos
       }
     },
+  },
+  computed: {
+    totalCollected() {
+      if (!this.tournees || !this.tournees.length) return '0.00'
+      return this.tournees
+        .reduce((sum, tournee) => {
+          const montant = parseFloat(tournee.montant)
+          return sum + (isNaN(montant) ? 0 : montant)
+        }, 0)
+        .toFixed(2)
+    },
+    // Calculer le montant total des dettes
+    totalDet() {
+      if (!this.tournees || !this.tournees.length) return '0.00'
+      return this.tournees
+        .filter(tournee => tournee.dette === true)
+        .reduce((sum, tournee) => {
+          const montant = parseFloat(tournee.montantDette)
+          return sum + (isNaN(montant) ? 0 : montant)
+        }, 0)
+        .toFixed(2)
+    },
+  },
+  mounted() {
+    this.fetchConsos(), this.fetchTotal()
   },
   name: 'HomeView',
 }
