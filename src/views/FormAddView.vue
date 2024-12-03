@@ -1,18 +1,20 @@
 <template>
-  <div class="min-h-screen bg-sky-950 p-4 md:p-6">
+  <div
+    class="min-h-screen bg-sky-950 p-4 md:p-6 w-full flex flex-col justify-start items-center"
+  >
     <header
-      class="flex items-center justify-start gap-10 text-sky-50 p-3 md:p-4 rounded mb-4 md:mb-6"
+      class="flex items-center justify-center text-light p-3 md:p-4 rounded mb-4 md:mb-6"
     >
       <button
         @click="goHome"
-        class="flex items-center justify-center w-10 h-10 bg-sky-50 text-sky-950 rounded-full hover:bg-gray-700 transition duration-300"
+        class="flex items-center justify-center w-10 h-10 bg-midnight text-sky-950 rounded-full hover:bg-gray-700 transition duration-300"
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           class="h-5 w-5"
           fill="none"
           viewBox="0 0 24 24"
-          stroke="currentColor"
+          stroke="#FFF"
         >
           <path
             stroke-linecap="round"
@@ -22,28 +24,80 @@
           />
         </svg>
       </button>
-      <h1 class="text-lg md:text-xl font-semibold">Ajouter une tournée</h1>
+      <img class="w-7/12" src="../assets/imgs/toucy.svg" alt="" />
     </header>
 
-    <main class="bg-sky-50 p-6 rounded shadow-md">
+    <main class="bg-midnight p-6 rounded shadow-md w-3/4">
       <div class="mb-4">
-        <label class="block text-sky-950 mb-1">Choisir une personne :</label>
-        <select
-          v-model="selectedMembre"
-          class="w-full border border-sky-200 rounded px-3 py-2 focus:outline-none focus:border-gray-400"
-        >
-          <option
-            v-for="membre in filteredMembres"
-            :key="membre.name"
-            :value="membre"
+        <h1 class="text-xl text-light font-semibold text-center mb-8">
+          Ajoutez une tournée !
+        </h1>
+        <!-- Champ de recherche et liste déroulante -->
+        <label class="block text-light mb-1">Rechercher une personne :</label>
+        <div class="relative" ref="container">
+          <input
+            v-model="searchQuery"
+            type="text"
+            placeholder="Tapez pour rechercher..."
+            class="w-full border border-sky-200 rounded px-3 py-2 focus:outline-none focus:border-gray-400"
+            @focus="showDropdown = true"
+            @blur="handleBlur"
+          />
+
+          <!-- Liste déroulante des résultats filtrés -->
+          <ul
+            v-if="showDropdown && filteredMembres.length > 0"
+            class="absolute bg-light border border-midnight rounded w-full mt-1 shadow-lg z-10"
           >
-            {{ membre.name }}
-          </option>
-        </select>
+            <li
+              v-for="(membre, index) in filteredMembres"
+              :key="index"
+              @mousedown.prevent="selectMembre(membre)"
+              class="px-3 py-2 hover:bg-sky-100 cursor-pointer"
+            >
+              {{ membre.name }}
+            </li>
+            <!-- Option pour ajouter un nouveau membre -->
+            <li
+              @mousedown.prevent="openAddMembreModal"
+              class="px-3 py-2 hover:bg-light cursor-pointer text-midnight italic"
+            >
+              Ajouter un nouveau membre
+            </li>
+          </ul>
+        </div>
+
+        <!-- Modale pour ajouter un nouveau membre -->
+        <div
+          v-if="showAddMembreModal"
+          class="fixed inset-0 bg-midnight bg-opacity-90 flex justify-center items-center z-20"
+        >
+          <div class="bg-dark p-4 rounded shadow-md w-64">
+            <h3 class="text-light mb-4">Ajouter un nouveau membre</h3>
+            <input
+              type="text"
+              v-model="newMembreName"
+              class="w-full border border-sky-200 rounded px-3 py-2 mb-4 focus:outline-none focus:border-gray-400"
+              placeholder="Nom du membre"
+            />
+            <button
+              @click="addNewPersonne(newMembreName)"
+              class="w-full bg-accent text-light py-2 rounded hover:bg-gray-800"
+            >
+              Ajouter
+            </button>
+            <button
+              @click="showAddMembreModal = false"
+              class="w-full text-light py-2 rounded hover:bg-gray-200 mt-2"
+            >
+              Annuler
+            </button>
+          </div>
+        </div>
       </div>
 
       <div class="mb-4">
-        <label class="block text-sky-950 mb-1">Choisir un montant :</label>
+        <label class="block text-light mb-1">Choisir un montant :</label>
         <select
           v-model="selectedMontant"
           class="w-full border border-sky-200 rounded px-3 py-2 focus:outline-none focus:border-gray-400"
@@ -60,10 +114,10 @@
 
       <div
         v-if="isCustomMontant"
-        class="fixed inset-0 bg-gray-900 bg-opacity-50 flex justify-center items-center"
+        class="fixed inset-0 bg-midnight bg-opacity-90 flex justify-center items-center"
       >
-        <div class="bg-white p-4 rounded shadow-md w-64">
-          <h3 class="text-gray-700 mb-4">Montant personnalisé</h3>
+        <div class="bg-dark p-4 rounded shadow-md w-64">
+          <h3 class="text-light mb-4">Montant personnalisé</h3>
           <input
             type="number"
             v-model="customMontant"
@@ -72,9 +126,15 @@
           />
           <button
             @click="validateCustomMontant"
-            class="w-full bg-gray-900 text-white py-2 rounded hover:bg-gray-800"
+            class="w-full bg-accent text-light py-2 rounded hover:bg-gray-800"
           >
             Valider
+          </button>
+          <button
+            @click="isCustomMontant = false"
+            class="w-full text-light py-2 rounded hover:bg-gray-200 mt-2"
+          >
+            Annuler
           </button>
         </div>
       </div>
@@ -86,12 +146,12 @@
             v-model="tourneePayee"
             class="form-checkbox text-sky-950"
           />
-          <span class="ml-2 text-sky-950">Tournée payée ?</span>
+          <span class="ml-2 text-light">Tournée payée ?</span>
         </label>
       </div>
 
       <div v-if="tourneePayee" class="mb-4">
-        <label class="block text-sky-950 mb-1">Mode de paiement :</label>
+        <label class="block text-light mb-1">Mode de paiement :</label>
         <select
           v-model="selectedPaiement"
           class="w-full border border-sky-200 rounded px-3 py-2 focus:outline-none focus:border-gray-400"
@@ -107,21 +167,30 @@
       </div>
 
       <div class="mb-4">
-        <p class="text-sky-950 font-semibold">Récapitulatif :</p>
-        <p v-if="tourneePayee">
-          Une tournée de <span class="font-bold">{{ montantTournée }}</span> €
-          est payée par <span class="font-bold">test</span> avec
-          <span class="font-bold">{{ selectedPaiement }}</span> !
+        <p class="text-light font-semibold">Récapitulatif :</p>
+        <p v-if="tourneePayee" class="text-light">
+          Une tournée de
+          <span class="font-bold">{{ montantTournée ?? 0 }}</span> € est payée
+          par
+          <span class="font-bold">{{
+            selectedMembre?.name || 'personne'
+          }}</span>
+          avec <span class="font-bold">{{ selectedPaiement ?? 'rien' }}</span> !
         </p>
-        <p v-else>
-          Une dette de <span class="font-bold">{{ montantTournée }}</span> € est
-          attribuée à <span class="font-bold">test</span> !
+        <p v-else class="text-light">
+          Une dette de
+          <span class="font-bold">{{ montantTournée ?? 0 }}</span> € est
+          attribuée à
+          <span class="font-bold">{{
+            selectedMembre?.name || 'personne'
+          }}</span>
+          !
         </p>
       </div>
 
       <button
         @click="saveTournee"
-        class="w-full bg-sky-950 text-sky-50 py-2 rounded hover:bg-gray-800 transition"
+        class="w-full bg-accent text-light py-2 rounded hover:bg-gray-800 transition"
       >
         Valider
       </button>
@@ -131,11 +200,20 @@
 
 <script>
 import { db } from '@/firebase/index'
-import { collection, getDocs, addDoc } from 'firebase/firestore'
+import {
+  collection,
+  getDocs,
+  addDoc,
+  setDoc,
+  doc,
+  updateDoc,
+  getDoc,
+} from 'firebase/firestore'
 export default {
   data() {
     return {
-      selectedMembre: null,
+      searchQuery: '',
+      selectedMembre: {},
       filteredMembres: [],
       montantsDisponibles: [5, 10, 15, 20, 'Autre'],
       selectedMontant: null,
@@ -145,6 +223,10 @@ export default {
       selectedPaiement: null,
       moyensPaiement: ['Lydia', 'Espèces', 'Paylib'],
       montantTournée: null,
+      showDropdown: false,
+      showAddMembreModal: false,
+      newMembreName: '',
+      membres: [],
     }
   },
   watch: {
@@ -155,8 +237,63 @@ export default {
     customMontant(val) {
       this.montantTournée = val
     },
+    searchQuery() {
+      this.filterMembres()
+    },
   },
   methods: {
+    resetForm() {
+      Object.assign(this.$data, this.$options.data.call(this))
+    },
+    openAddMembreModal() {
+      this.showAddMembreModal = true
+    },
+    async addNewPersonne(nom) {
+      try {
+        if (!nom) {
+          alert('Veuillez entrer un nom pour le nouveau membre.')
+          return
+        }
+
+        const docRef = doc(db, 'membres', nom)
+
+        // Ajouter ou mettre à jour le document avec les données
+        await setDoc(docRef, {
+          name: nom,
+          isResp: false,
+          totalDette: 0,
+          totalPaye: 0,
+        })
+
+        console.log('Nouveau membre ajouté avec ID:', docRef.id)
+
+        // Ajouter le nouveau membre dans la liste et le sélectionner
+        this.membres.push({ name: nom })
+        this.selectedMembre = { name: nom }
+        this.showAddMembreModal = false
+        this.newMembreName = ''
+
+        alert(`${nom} a été ajouté avec succès !`)
+      } catch (error) {
+        console.error("Erreur lors de l'ajout d'un nouveau membre :", error)
+      }
+    },
+    handleClickOutside(event) {
+      if (!this.$refs.container.contains(event.target)) {
+        this.showDropdown = false
+      }
+    },
+    selectMembre(membre) {
+      this.selectedMembre = membre
+      this.searchQuery = membre.name // Remplir l'input avec le nom du membre sélectionné
+      this.showDropdown = false // Fermer la liste déroulante
+    },
+    filterMembres() {
+      // Filtrer les membres en fonction de la requête de recherche
+      this.filteredMembres = this.membres.filter(membre =>
+        membre.name.toLowerCase().includes(this.searchQuery.toLowerCase()),
+      )
+    },
     async fetchMembres() {
       try {
         const membresCollection = collection(db, 'membres')
@@ -169,34 +306,7 @@ export default {
         console.error('Erreur lors de la récupération des membres :', error)
       }
     },
-    async addNewPersonne(nom) {
-      try {
-        if (!nom) {
-          throw new Error('Le nom de la personne est manquant.')
-        }
 
-        // Ajouter la nouvelle personne dans Firestore
-        const docRef = await addDoc(collection(db, 'membres'), {
-          name: nom, // Assurez-vous que le nom est bien passé
-          isResp: false,
-        })
-
-        console.log('Nouveau membre ajouté avec ID:', docRef.id)
-
-        // Ajouter le nouveau membre dans la liste des membres disponibles
-        this.membres.push(nom)
-
-        this.selectedMembre = nom
-
-        // Réinitialiser la sélection dans le composant ListChoice
-        this.$refs.personSelect.resetSelect()
-        this.$refs.personSelect.selectedItem = nom
-
-        alert(`${nom} a été ajouté avec succès !`)
-      } catch (error) {
-        console.error("Erreur lors de l'ajout d'un nouveau membre :", error)
-      }
-    },
     async saveTournee() {
       if (
         !this.selectedMembre ||
@@ -208,20 +318,115 @@ export default {
       }
 
       try {
-        // Ajout de la nouvelle tournée dans Firestore
+        const date = new Date()
+
+        // Gérer le totalDette de la personne
+        const nouveauTotalDette = this.tourneePayee
+          ? this.selectedMembre.totalDette || 0
+          : (this.selectedMembre.totalDette || 0) + this.montantTournée
+
+        // Gérer le totalPaye de la personne
+        const nouveauTotalPaye = this.tourneePayee
+          ? (this.selectedMembre.totalPaye || 0) + this.montantTournée
+          : this.selectedMembre.totalPaye || 0
+
+        // Ajout de la nouvelle tournée dans "tournees"
         const docRef = await addDoc(collection(db, 'tournees'), {
           name: this.selectedMembre.name,
           montant: this.montantTournée,
           paye: this.tourneePayee,
           dette: !this.tourneePayee,
           moyen: this.tourneePayee ? this.selectedPaiement : '',
-          date: new Date().toLocaleDateString(),
+          date: date,
           ...(this.tourneePayee === false
             ? { montantDette: this.montantTournée }
             : {}),
         })
 
+        // Ajout transactions pour "membres"
+        const membresRef = doc(
+          db,
+          'membres',
+          this.selectedMembre.name,
+          'transactions',
+          docRef.id,
+        )
+
+        await setDoc(membresRef, {
+          typeTransaction: 'tournée',
+          montant: this.montantTournée,
+          resteAPayer: this.tourneePayee ? 0 : this.montantTournée,
+          moyenPaiement: this.tourneePayee ? this.selectedPaiement : '',
+          date: date,
+          statut: this.tourneePayee ? 'payée' : 'non payée',
+          tourneeId: docRef.id,
+        })
+
+        if (this.tourneePayee == false) {
+          await addDoc(collection(db, 'dettes'), {
+            tourneeId: docRef.id,
+            statut: 'non payée',
+            montant: this.montantTournée,
+            date: date,
+            moyenPaiement: '',
+            name: this.selectedMembre.name,
+          })
+        }
+
+        const membreRef = doc(db, 'membres', this.selectedMembre.name)
+        console.log(nouveauTotalPaye)
+        console.log(nouveauTotalDette)
+        await updateDoc(membreRef, {
+          totalDette: nouveauTotalDette,
+          totalPaye: nouveauTotalPaye,
+        })
+
         console.log("Document ajouté avec l'ID : ", docRef.id)
+
+        // Mise à jour des totaux
+        const consosRef = collection(db, 'consommations')
+
+        try {
+          const consosSnap = await getDocs(consosRef)
+          if (consosSnap.empty) {
+            console.error(
+              "Erreur : Aucun document trouvé dans la collection 'consommations'.",
+            )
+            return
+          }
+
+          const firstDoc = consosSnap.docs[0]
+          const consosData = firstDoc.data()
+
+          // Récupération des totaux actuels avec des valeurs par défaut
+          const totalDetteConso = consosData?.totalDette ?? 0
+          const totalPayeConso = consosData?.totalPaye ?? 0
+
+          console.log('Valeur actuelle de totalDetteConso :', totalDetteConso)
+          console.log('Valeur actuelle de totalPayeConso :', totalPayeConso)
+          console.log('Montant de la tournée :', this.montantTournée)
+
+          // Recharger les données actuelles pour une mise à jour synchronisée
+          const ref = doc(db, 'consommations', firstDoc.id)
+          const updatedDocSnap = await getDoc(ref)
+          const updatedData = updatedDocSnap.data()
+          const currentTotalPayeConso = updatedData?.totalPayeConso ?? 0
+          const currentTotalDetteConso = updatedData?.totalDetteConso ?? 0
+
+          await updateDoc(ref, {
+            totalDetteConso: this.tourneePayee
+              ? currentTotalDetteConso
+              : currentTotalDetteConso + this.montantTournée,
+            totalPayeConso: this.tourneePayee
+              ? currentTotalPayeConso + this.montantTournée
+              : currentTotalPayeConso,
+          })
+
+          console.log('Mise à jour des totaux réussie !')
+        } catch (error) {
+          console.error('Erreur lors de la mise à jour des totaux :', error)
+        }
+
         alert('Tournée enregistrée avec succès !')
         this.resetForm()
       } catch (error) {
@@ -237,7 +442,12 @@ export default {
     },
   },
   mounted() {
-    this.fetchMembres()
+    this.fetchMembres(),
+      document.addEventListener('click', this.handleClickOutside)
+  },
+  beforeUnmount() {
+    // Nettoyer l'écouteur d'événement lorsque le composant est détruit
+    document.removeEventListener('click', this.handleClickOutside)
   },
 }
 </script>

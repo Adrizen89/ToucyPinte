@@ -1,11 +1,11 @@
 <template>
   <div id="homeForm" class="bg-sky-950 h-screen overflow-auto px-4 font-sans">
-    <main class="flex flex-col justify-evenly items-start h-full">
-      <img src="../assets/imgs/toucy.svg" alt="" />
+    <main class="flex flex-col justify-evenly items-center h-full">
+      <img class="" src="../assets/imgs/toucy.svg" alt="" />
       <div class="flex justify-center items-center w-full px-6 gap-10">
         <!-- Nombre aligné à gauche (Montant récolté) -->
-        <p class="text-3xl font-bold text-sky-50">
-          {{ totalCollected - totalDet }} € <br />récoltés
+        <p class="text-3xl font-bold text-light">
+          {{ totalPayeConso }} € <br />récoltés
         </p>
 
         <!-- consos restantes -->
@@ -13,7 +13,7 @@
           <!-- Affichage du nombre de consos restantes ou input pour la modification -->
           <p
             v-if="!isEditing"
-            class="text-2xl font-bold text-sky-50 cursor-pointer"
+            class="text-2xl font-bold text-light cursor-pointer"
             @click="startEditing"
           >
             {{ nombreConsos || '0' }} <br />consos restantes
@@ -31,13 +31,13 @@
           <div class="flex mt-2 gap-10 justify-start w-full">
             <button
               @click="decrementConsos"
-              class="px-3 py-1 bg-sky-400 text-white rounded-lg hover:bg-sky-600"
+              class="px-3 py-1 bg-midnight text-light rounded-lg hover:bg-lightnight"
             >
               -
             </button>
             <button
               @click="incrementConsos"
-              class="px-3 py-1 bg-sky-500 text-white rounded-lg hover:bg-sky-800"
+              class="px-3 py-1 bg-midnight text-light rounded-lg hover:bg-lightnight"
             >
               +
             </button>
@@ -49,89 +49,162 @@
       <div class="grid grid-cols-2 gap-6">
         <!-- Card 1: Ajouter une tournée -->
         <div
-          class="flex flex-col items-center p-6 bg-sky-50 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+          class="flex flex-col items-center p-6 bg-midnight rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer"
           @click="goToFormAddView"
         >
           <!-- Cercle autour de l'icône -->
           <div
-            class="flex items-center justify-center w-16 h-16 bg-rose-200 rounded-full mb-3"
+            class="flex items-center justify-center w-16 h-16 bg-firstCard rounded-full mb-3"
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-rose-800"
-              fill="none"
               viewBox="0 0 24 24"
-              stroke="currentColor"
+              class="h-8 w-8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <path
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g
+                id="SVGRepo_tracerCarrier"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
-                d="M12 4v16m8-8H4"
-              />
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                <path
+                  d="M8 12H16M12 8V16M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                  stroke="#9f1239"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+              </g>
             </svg>
           </div>
           <!-- Texte sous l'icône -->
-          <span class="text-lg text-center font-semibold text-sky-950"
+          <span class="text-lg text-center font-semibold text-light"
             >Ajouter une tournée</span
           >
         </div>
 
         <!-- Card 2: Payer une dette -->
         <div
-          class="flex flex-col items-center p-6 bg-sky-50 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+          class="flex flex-col items-center p-6 bg-midnight rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer"
           @click="goToFormDetteView"
         >
           <!-- Cercle autour de l'icône, parfaitement centré -->
           <div
-            class="flex items-center justify-center w-16 h-16 bg-lime-200 rounded-full mb-3"
+            class="flex items-center justify-center w-16 h-16 bg-secondCard rounded-full mb-3"
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-lime-800"
+              viewBox="0 0 24 24"
+              class="h-8 w-8"
               fill="none"
-              viewBox="0 0 26 26"
-              stroke="currentColor"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <path
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g
+                id="SVGRepo_tracerCarrier"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
-                d="M9 14l6-6m0 0l6 6m-6-6v12"
-              />
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                <path
+                  d="M13 19.0008L17.8 19C18.9201 19 19.4802 19 19.908 18.782C20.2843 18.5903 20.5903 18.2843 20.782 17.908C21 17.4802 21 16.9201 21 15.8V8.2C21 7.0799 21 6.51984 20.782 6.09202C20.5903 5.71569 20.2843 5.40973 19.908 5.21799C19.4802 5 18.9201 5 17.8 5H6.2C5.0799 5 4.51984 5 4.09202 5.21799C3.71569 5.40973 3.40973 5.71569 3.21799 6.09202C3 6.51984 3 7.0799 3 8.2V15M3 9H20M9 19.0008L3 19M9 19.0008L7 17M9 19.0008L7 21"
+                  stroke="#3f6212"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+              </g>
             </svg>
           </div>
           <!-- Texte sous l'icône -->
-          <span class="text-lg text-center font-semibold text-sky-950"
+          <span class="text-lg text-center font-semibold text-light"
             >Payer une dette</span
           >
         </div>
 
         <!-- Card 3: Voir le tableau de bord -->
         <div
-          class="flex flex-col items-center p-6 bg-sky-50 rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+          class="flex flex-col items-center p-6 bg-midnight rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer"
           @click="goToDashboardView"
         >
           <div
-            class="flex items-center justify-center w-16 h-16 bg-indigo-200 rounded-full mb-3"
+            class="flex items-center justify-center w-16 h-16 bg-thirdCard rounded-full mb-3"
           >
             <svg
-              xmlns="http://www.w3.org/2000/svg"
-              class="h-8 w-8 text-indigo-800 mb-3"
-              fill="none"
               viewBox="0 0 24 24"
-              stroke="currentColor"
+              class="h-8 w-8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
             >
-              <path
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g
+                id="SVGRepo_tracerCarrier"
                 stroke-linecap="round"
                 stroke-linejoin="round"
-                stroke-width="2"
-                d="M3 12h18M3 6h18M3 18h18"
-              />
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                <path
+                  d="M19.9497 17.9497L15 13H22C22 14.933 21.2165 16.683 19.9497 17.9497Z"
+                  stroke="#3730a3"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+                <path
+                  d="M20 10C20 6.13401 16.866 3 13 3V10H20Z"
+                  stroke="#3730a3"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+                <path
+                  d="M2 12C2 16.4183 5.58172 20 10 20C12.2091 20 14.2091 19.1046 15.6569 17.6569L10 12V4C5.58172 4 2 7.58172 2 12Z"
+                  stroke="#3730a3"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+              </g>
             </svg>
           </div>
-          <span class="text-lg text-center font-semibold text-sky-950"
+          <span class="text-lg text-center font-semibold text-light"
             >Voir le tableau de bord</span
+          >
+        </div>
+
+        <!-- Card 4: Prochainement -->
+        <div
+          class="flex flex-col items-center p-6 bg-midnight rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 cursor-pointer"
+        >
+          <div
+            class="flex items-center justify-center w-16 h-16 bg-fourthCard rounded-full mb-3"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="h-8 w-8"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <g id="SVGRepo_bgCarrier" stroke-width="0"></g>
+              <g
+                id="SVGRepo_tracerCarrier"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              ></g>
+              <g id="SVGRepo_iconCarrier">
+                <path
+                  d="M4.06189 13C4.02104 12.6724 4 12.3387 4 12C4 7.58172 7.58172 4 12 4C14.5006 4 16.7332 5.14727 18.2002 6.94416M19.9381 11C19.979 11.3276 20 11.6613 20 12C20 16.4183 16.4183 20 12 20C9.61061 20 7.46589 18.9525 6 17.2916M9 17H6V17.2916M18.2002 4V6.94416M18.2002 6.94416V6.99993L15.2002 7M6 20V17.2916"
+                  stroke="#166534"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                ></path>
+              </g>
+            </svg>
+          </div>
+          <span class="text-lg text-center font-semibold text-light"
+            >Prochainement</span
           >
         </div>
       </div>
@@ -146,6 +219,8 @@ import { collection, getDocs, updateDoc, doc, addDoc } from 'firebase/firestore'
 export default {
   data() {
     return {
+      totalPayeConso: 0,
+      totalDetteConso: 0,
       collectedAmount: 123,
       remainingConsos: 12,
       nombreConsos: '',
@@ -157,9 +232,20 @@ export default {
   methods: {
     async fetchTotal() {
       try {
-        const totalCollection = collection(db, 'tournees')
-        const totauxSnapshot = await getDocs(totalCollection)
-        this.tournees = totauxSnapshot.docs.map(doc => doc.data()) // Stocker les tournées récupérées
+        const consosRef = collection(db, 'consommations')
+        const consosSnap = await getDocs(consosRef)
+        if (consosSnap.empty) {
+          console.error(
+            "Erreur : Aucun document trouvé dans la collection 'consommations'.",
+          )
+          return
+        }
+
+        const firstDoc = consosSnap.docs[0]
+        const consosData = firstDoc.data()
+
+        // Mise à jour de la propriété réactive
+        this.totalPayeConso = consosData?.totalPayeConso ?? 0
       } catch (error) {
         console.error('Erreur lors de la récupération des tournées:', error)
       }
